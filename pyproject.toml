@@ -1,0 +1,47 @@
+[project]
+name = "llm-from-scratch"
+version = "0.1.0"
+description = "Learning implementations for the eleven-week LLM study plan"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "einops>=0.8,<0.9",
+    "numpy>=2.4,<3",
+    "torch>=2.11,<2.12",
+    "wandb>=0.25,<0.26",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.18,<2",
+    "pytest>=9,<10",
+    "ruff>=0.15,<0.16",
+]
+notebooks = [
+    "ipykernel>=7,<8",
+    "matplotlib>=3.10,<4",
+]
+
+[tool.uv]
+default-groups = ["dev"]
+package = false
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = ["notebooks"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src", "tests"]
+check_untyped_defs = true
+warn_redundant_casts = true
+warn_unused_configs = true
+warn_unused_ignores = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
