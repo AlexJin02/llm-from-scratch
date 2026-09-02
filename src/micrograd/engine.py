@@ -1,5 +1,6 @@
 import math
 
+
 class Value:
     """Store a single scalar value and its gradient"""
 
