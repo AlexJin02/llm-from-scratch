@@ -205,6 +205,8 @@ class TestFullBackward:
         micro_out.backward()
         torch_out.backward()
 
+        assert torch_a.grad is not None
+        assert torch_b.grad is not None
         assert micro_out.data == pytest.approx(torch_out.item())
         assert micro_a.grad == pytest.approx(torch_a.grad.item())
         assert micro_b.grad == pytest.approx(torch_b.grad.item())
@@ -221,6 +223,8 @@ class TestFullBackward:
         micro_out.backward()
         torch_out.backward()
 
+        assert torch_a.grad is not None
+        assert torch_b.grad is not None
         assert micro_out.data == pytest.approx(torch_out.item())
         assert micro_a.grad == pytest.approx(torch_a.grad.item())
         assert micro_b.grad == pytest.approx(torch_b.grad.item())
