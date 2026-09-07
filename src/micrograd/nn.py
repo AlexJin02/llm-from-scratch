@@ -11,6 +11,7 @@ class Module:
     def parameters(self):
         return []
 
+
 class Neuron(Module):
     def __init__(self, nin):
         self.w = [Value(random.uniform(-1, 1)) for _ in range(nin)]
@@ -35,6 +36,7 @@ class Layer(Module):
 
     def parameters(self):
         return [p for n in self.neurons for p in n.parameters()]
+
 
 class MLP(Module):
     def __init__(self, nin, nouts):

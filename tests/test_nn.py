@@ -6,13 +6,21 @@ import random
 import pytest
 
 from micrograd.engine import Value
-from micrograd.nn import MLP, Layer, Neuron
+from micrograd.nn import MLP, Layer, Module, Neuron
 
 
 def set_neuron_parameters(neuron, weights, bias=0.0):
     for parameter, value in zip(neuron.w, weights, strict=True):
         parameter.data = value
     neuron.b.data = bias
+
+
+class TestModule:
+    def test_default_parameters_are_empty(self):
+        assert Module().parameters() == []
+
+    def test_default_zero_grad_is_safe(self):
+        assert Module().zero_grad() is None
 
 
 class TestNeuron:
@@ -24,6 +32,11 @@ class TestNeuron:
         assert isinstance(neuron.b, Value)
         assert neuron.b.data == pytest.approx(0.0)
         assert all(-1.0 <= weight.data <= 1.0 for weight in neuron.w)
+
+    def test_parameters_returns_weights_followed_by_bias(self):
+        neuron = Neuron(3)
+
+        assert neuron.parameters() == [*neuron.w, neuron.b]
 
     def test_seed_makes_initialization_reproducible(self):
         original_state = random.getstate()
@@ -84,6 +97,13 @@ class TestLayer:
         assert len(layer.neurons) == 4
         assert all(len(neuron.w) == 3 for neuron in layer.neurons)
 
+    def test_parameters_flattens_all_neuron_parameters(self):
+        layer = Layer(3, 4)
+        expected = [parameter for neuron in layer.neurons for parameter in neuron.parameters()]
+
+        assert layer.parameters() == expected
+        assert len(layer.parameters()) == 16
+
     def test_multiple_neurons_return_list(self):
         layer = Layer(2, 2)
         set_neuron_parameters(layer.neurons[0], [1.0, 0.0])
@@ -113,12 +133,29 @@ class TestMLP:
 
     def test_architecture_has_expected_parameter_count(self):
         model = MLP(3, [4, 4, 1])
-        parameters = [
-            parameter for layer in model.layers for neuron in layer.neurons for parameter in [*neuron.w, neuron.b]
-        ]
+        parameters = model.parameters()
 
         assert len(parameters) == 41
         assert all(isinstance(parameter, Value) for parameter in parameters)
+
+    def test_parameters_preserves_layer_order(self):
+        model = MLP(2, [3, 1])
+        expected = [parameter for layer in model.layers for parameter in layer.parameters()]
+
+        assert model.parameters() == expected
+
+    def test_zero_grad_clears_every_parameter_gradient(self):
+        model = MLP(2, [3, 1])
+        parameters = model.parameters()
+        original_data = [parameter.data for parameter in parameters]
+        for index, parameter in enumerate(parameters, start=1):
+            parameter.grad = float(index)
+
+        returned = model.zero_grad()
+
+        assert returned is None
+        assert all(parameter.grad == 0.0 for parameter in parameters)
+        assert [parameter.data for parameter in parameters] == original_data
 
     def test_forward_passes_output_of_each_layer_to_next(self):
         model = MLP(2, [2, 1])
@@ -150,8 +187,6 @@ class TestMLP:
         output = model([Value(0.5), Value(-0.25)])
         output.backward()
 
-        parameters = [
-            parameter for layer in model.layers for neuron in layer.neurons for parameter in [*neuron.w, neuron.b]
-        ]
+        parameters = model.parameters()
         assert all(math.isfinite(parameter.grad) for parameter in parameters)
         assert all(parameter.grad != 0.0 for parameter in parameters)
